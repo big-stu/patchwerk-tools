@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Patchwerk — Content Generator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0d0d0d;
+    --surface: #161616;
+    --surface2:#1e1e1e;
+    --border:  #2a2a2a;
+    --accent:  #e8ff00;
+    --text:    #e8e8e8;
+    --muted:   #666;
+    --red:     #ff3c3c;
+    --blue:    #3c9eff;
+    --green:   #3cff8f;
+    --amber:   #ffaa00;
+  }
+
+  html, body { height: 100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    height: 56px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', cursive;
+    font-size: 24px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .logo span { color: var(--muted); }
+
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .tabs {
+    display: flex;
+    margin-left: auto;
+  }
+  .tab {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 8px 20px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    text-transform: uppercase;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tab:first-child { border-radius: 4px 0 0 4px; }
+  .tab:last-child  { border-radius: 0 4px 4px 0; border-left: none; }
+  .tab.active { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 600; }
+
+  /* ── Layout ── */
+  .main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .pane {
+    padding: 24px;
+    overflow-y: auto;
+  }
+
+  .pane-form  { border-right: 1px solid var(--border); }
+  .pane-preview { background: #0a0a0a; display: flex; flex-direction: column; }
+
+  /* ── Form elements ── */
+  .section-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .field { margin-bottom: 16px; }
+
+  .field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .field label .req { color: var(--red); margin-left: 2px; }
+  .field label .opt { color: #444; margin-left: 5px; font-size: 10px; }
+
+  .field input,
+  .field textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    padding: 9px 12px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s;
+    appearance: none;
+  }
+  .field input[type="date"] { color-scheme: dark; }
+  .field input:focus,
+  .field textarea:focus { border-color: var(--accent); }
+  .field textarea { resize: vertical; min-height: 90px; line-height: 1.55; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  .hint {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 5px;
+    font-style: italic;
+    line-height: 1.4;
+  }
+
+  hr.div { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
+
+  /* ── Entry radio ── */
+  .radio-group { display: flex; gap: 7px; }
+  .radio-btn {
+    flex: 1;
+    padding: 8px 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .radio-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(232,255,0,0.06);
+  }
+
+  .entry-preview {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'Share Tech Mono', monospace;
+    border: 1px solid var(--border);
+    background: #111;
+    color: var(--muted);
+    line-height: 1.6;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .badge-free     { background: #0d2340; color: #3c9eff; border: 1px solid #1a3a5c; }
+  .badge-ticketed { background: #2d0d0d; color: #ff6b6b; border: 1px solid #4a1515; }
+  .badge-doors    { background: #2a1e00; color: #ffaa00; border: 1px solid #3d2d00; }
+
+  /* ── Conditional fields ── */
+  .conditional { display: none; }
+  .conditional.visible { display: block; }
+
+  /* ── Image accordion ── */
+  .img-box {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: rgba(60,255,143,0.03);
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .img-box-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .img-box-header span {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+  .img-box-arrow { font-size: 10px; color: var(--muted); transition: transform 0.2s; }
+  .img-box-arrow.open { transform: rotate(180deg); }
+  .img-box-body { padding: 0 14px 14px; display: none; }
+  .img-box-body.open { display: block; }
+  .img-path {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    background: #0d0d0d;
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 9px 12px;
+    color: var(--green);
+    margin: 8px 0;
+    word-break: break-all;
+    line-height: 1.6;
+  }
+  .img-note { font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .img-note strong { color: #aaa; font-weight: 600; }
+  .formats { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .fmt-tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: var(--muted);
+  }
+
+  /* ── Preview pane ── */
+  .preview-meta {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .preview-path {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: #444;
+    margin-bottom: 8px;
+  }
+  .filename-pill {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    background: rgba(232,255,0,0.07);
+    border: 1px solid rgba(232,255,0,0.2);
+    color: var(--accent);
+    padding: 6px 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+    word-break: break-all;
+  }
+  .code-block {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    line-height: 1.75;
+    white-space: pre-wrap;
+    word-break: break-all;
+    flex: 1;
+  }
+  .fm-sep  { color: #3a3a3a; }
+  .fm-key  { color: var(--blue); }
+  .fm-val  { color: #a8e6cf; }
+  .fm-body { color: #ccc; }
+  .fm-comment { color: #444; font-style: italic; }
+
+  /* ── Poster reminder ── */
+  .poster-reminder {
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .poster-reminder .label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .poster-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 12px;
+    background: #111;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .dot-warn { background: var(--amber); }
+  .dot-off  { background: var(--border); }
+  .poster-path {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: var(--green);
+    margin-left: auto;
+    text-align: right;
+    word-break: break-all;
+  }
+  .poster-path.none { color: var(--muted); font-style: italic; }
+
+  /* ── Actions ── */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .btn {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: 1px solid;
+  }
+  .btn-primary { background: var(--accent); color: #000; border-color: var(--accent); font-weight: 700; }
+  .btn-primary:hover { background: #d4e800; }
+  .btn-secondary { background: transparent; color: var(--text); border-color: var(--border); }
+  .btn-secondary:hover { border-color: #888; }
+  .btn-download { background: transparent; color: var(--green); border-color: rgba(60,255,143,0.3); }
+  .btn-download:hover { border-color: var(--green); background: rgba(60,255,143,0.05); }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--accent);
+    color: #000;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 10px 22px;
+    border-radius: 4px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ── Responsive ── */
+  @media (max-width: 800px) {
+    .main { grid-template-columns: 1fr; }
+    .pane-form { border-right: none; border-bottom: 1px solid var(--border); }
+    .tabs .tab { padding: 8px 14px; font-size: 10px; }
+    .header-sub { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Patch<span>werk</span></div>
+  <div class="header-sub">Content Generator</div>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('event')">Event</div>
+    <div class="tab" onclick="switchTab('blog')">Blog Post</div>
+  </div>
+</header>
+
+<div class="main">
+
+  <!-- ══ FORM PANE ══ -->
+  <div class="pane pane-form">
+
+    <!-- EVENT FORM -->
+    <div id="form-event">
+      <span class="section-label">Event Details</span>
+
+      <div class="field">
+        <label>File slug <span class="req">*</span><span class="opt">— becomes the filename</span></label>
+        <input type="text" id="ev-slug" placeholder="e.g. fabric-june-2026" oninput="update()" autocomplete="off" spellcheck="false" />
+        <div class="hint">lowercase, hyphens only — e.g. venue-name-month-year</div>
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Title <span class="req">*</span></label>
+          <input type="text" id="ev-title" placeholder="Event Title" oninput="update()" />
+        </div>
+        <div class="field">
+          <label>Date <span class="req">*</span></label>
+          <input type="date" id="ev-date" oninput="update()" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Venue <span class="req">*</span></label>
+        <input type="text" id="ev-venue" placeholder="Soup Kitchen, Manchester" oninput="update()" />
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Time<span class="opt">optional</span></label>
+          <input type="text" id="ev-time" placeholder="10PM – 4AM" oninput="update()" />
+        </div>
+        <div class="field">
+          <label>Event type<span class="opt">optional</span></label>
+          <input type="text" id="ev-type" placeholder="Club Night" oninput="update()" />
+        </div>
+      </div>
+
+      <hr class="div" />
+      <span class="section-label">Entry</span>
+
+      <div class="field">
+        <label>Entry type</label>
+        <div class="radio-group">
+          <div class="radio-btn active" id="rb-free"     onclick="setEntry('free')">Free</div>
+          <div class="radio-btn"        id="rb-ticketed" onclick="setEntry('ticketed')">Ticketed</div>
+          <div class="radio-btn"        id="rb-doors"    onclick="setEntry('doors')">Doors</div>
+          <div class="radio-btn"        id="rb-omit"     onclick="setEntry('')">Omit</div>
+        </div>
+        <div class="entry-preview" id="entry-preview"></div>
+      </div>
+
+      <div class="field conditional visible" id="tickets-field">
+        <label>Tickets URL<span class="opt">optional</span></label>
+        <input type="url" id="ev-tickets" placeholder="https://ra.co/events/..." oninput="update()" />
+        <div class="hint" id="tickets-hint"></div>
+      </div>
+
+      <div class="field">
+        <label>Maps URL override<span class="opt">optional</span></label>
+        <input type="url" id="ev-maps" placeholder="https://maps.google.com/?q=..." oninput="update()" />
+      </div>
+
+      <hr class="div" />
+      <span class="section-label">Description</span>
+
+      <div class="field">
+        <label>Body text<span class="opt">optional</span></label>
+        <textarea id="ev-body" placeholder="Event description shown on the event page and truncated on the listing..." oninput="update()"></textarea>
+      </div>
+
+      <hr class="div" />
+
+      <div class="img-box">
+        <div class="img-box-header" onclick="toggleImg('ev')">
+          <span>Poster Image</span>
+          <span class="img-box-arrow" id="ev-img-arrow">▼</span>
+        </div>
+        <div class="img-box-body" id="ev-img-body">
+          <p class="img-note">Images are <strong>not</strong> set in the markdown — the site auto-detects a poster by matching the slug filename. Upload your poster to:</p>
+          <div class="img-path" id="ev-img-path">/var/www/site/images/events/<span style="color:#444">&lt;slug&gt;</span>.jpg</div>
+          <div class="formats">
+            <span class="fmt-tag">.jpg</span>
+            <span class="fmt-tag">.jpeg</span>
+            <span class="fmt-tag">.png</span>
+            <span class="fmt-tag">.webp</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BLOG FORM -->
+    <div id="form-blog" style="display:none">
+      <span class="section-label">Post Details</span>
+
+      <div class="field">
+        <label>File slug <span class="req">*</span><span class="opt">— becomes the filename</span></label>
+        <input type="text" id="bl-slug" placeholder="e.g. summer-mix-series-2026" oninput="update()" autocomplete="off" spellcheck="false" />
+      </div>
+
+      <div class="field">
+        <label>Title <span class="req">*</span></label>
+        <input type="text" id="bl-title" placeholder="Post Title" oninput="update()" />
+      </div>
+
+      <div class="row2">
+        <div class="field">
+          <label>Date <span class="req">*</span></label>
+          <input type="date" id="bl-date" oninput="update()" />
+        </div>
+        <div class="field">
+          <label>Author<span class="opt">optional</span></label>
+          <input type="text" id="bl-author" placeholder="Patchwerk" oninput="update()" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Excerpt<span class="opt">optional — shown on blog listing</span></label>
+        <input type="text" id="bl-excerpt" placeholder="Short summary shown on the blog index..." oninput="update()" />
+      </div>
+
+      <hr class="div" />
+      <span class="section-label">Content</span>
+
+      <div class="field">
+        <label>Body (Markdown)</label>
+        <textarea id="bl-body" style="min-height:160px" placeholder="Full post content. Markdown supported:&#10;**bold**, *italic*, ## Heading, [link text](url), ![alt](image.jpg)" oninput="update()"></textarea>
+      </div>
+
+      <hr class="div" />
+
+      <div class="img-box">
+        <div class="img-box-header" onclick="toggleImg('bl')">
+          <span>Post Image</span>
+          <span class="img-box-arrow" id="bl-img-arrow">▼</span>
+        </div>
+        <div class="img-box-body" id="bl-img-body">
+          <p class="img-note">Embed images inline in the body using standard Markdown:</p>
+          <div class="img-path">![Alt text](/images/blog/your-image.jpg)</div>
+          <p class="img-note" style="margin-top:10px">Upload images to the server at:</p>
+          <div class="img-path">/var/www/site/images/blog/</div>
+          <div class="formats">
+            <span class="fmt-tag">.jpg</span>
+            <span class="fmt-tag">.jpeg</span>
+            <span class="fmt-tag">.png</span>
+            <span class="fmt-tag">.webp</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /pane-form -->
+
+  <!-- ══ PREVIEW PANE ══ -->
+  <div class="pane pane-preview">
+    <div class="preview-meta">Output</div>
+    <div class="preview-path" id="preview-path"></div>
+    <div class="filename-pill" id="filename-pill">set a slug to see filename</div>
+    <div class="code-block" id="code-block"></div>
+
+    <div class="poster-reminder" id="poster-reminder" style="display:none">
+      <div class="label">Also upload poster</div>
+      <div class="poster-row">
+        <div class="dot dot-off" id="poster-dot"></div>
+        <span style="font-family:'Share Tech Mono',monospace;font-size:10px;color:#888">Poster image</span>
+        <div class="poster-path none" id="poster-target">—</div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-primary" onclick="copyMd()">Copy to clipboard</button>
+      <button class="btn btn-download" onclick="downloadMd()">Download .md</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear</button>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<div class="toast" id="toast">Copied!</div>
+
+<script>
+let mode = 'event';
+let entryType = 'free';
+
+const ENTRY = {
+  free:     { tickets: true,  hint: 'RSVP/info link optional. With URL → linked blue Free badge. Without → static Free badge.', badge: 'free',     desc: 'Blue Free badge on event cards.' },
+  ticketed: { tickets: true,  hint: 'Purchase link. With URL → red Get Tickets badge. Without URL → amber Doors badge + "Tickets on the Door" note.', badge: 'ticketed', desc: 'Red Get Tickets badge, or amber Doors if no URL.' },
+  doors:    { tickets: false, hint: '', badge: 'doors',    desc: 'Amber Doors badge — no link needed.' },
+  '':       { tickets: false, hint: '', badge: '',         desc: 'No entry badge displayed.' }
+};
+
+function switchTab(t) {
+  mode = t;
+  document.querySelectorAll('.tab').forEach((el,i) => el.classList.toggle('active', (i===0&&t==='event')||(i===1&&t==='blog')));
+  document.getElementById('form-event').style.display = t==='event' ? 'block' : 'none';
+  document.getElementById('form-blog').style.display  = t==='blog'  ? 'block' : 'none';
+  document.getElementById('poster-reminder').style.display = t==='event' ? 'block' : 'none';
+  update();
+}
+
+function toggleImg(p) {
+  const b = document.getElementById(p+'-img-body');
+  const a = document.getElementById(p+'-img-arrow');
+  const o = b.classList.toggle('open');
+  a.classList.toggle('open', o);
+}
+
+function setEntry(val) {
+  entryType = val;
+  ['free','ticketed','doors','omit'].forEach(v => {
+    const el = document.getElementById('rb-'+v);
+    if (el) el.classList.toggle('active', v===val||(v==='omit'&&val===''));
+  });
+  const m = ENTRY[val] || ENTRY[''];
+  document.getElementById('tickets-field').classList.toggle('visible', m.tickets);
+  document.getElementById('tickets-hint').textContent = m.hint;
+  const prev = document.getElementById('entry-preview');
+  if (m.badge) {
+    prev.innerHTML = '<span class="badge badge-'+m.badge+'">'+(m.badge==='ticketed'?'Get Tickets':m.badge.charAt(0).toUpperCase()+m.badge.slice(1))+'</span><span style="color:var(--muted);font-size:10px">'+m.desc+'</span>';
+  } else {
+    prev.innerHTML = '<span style="color:var(--muted);font-size:10px">'+m.desc+'</span>';
+  }
+  update();
+}
+
+function hl(md) {
+  return md.split('\n').map(line => {
+    if (line==='---') return '<span class="fm-sep">---</span>';
+    const m = line.match(/^([a-z_]+):\s*(.*)/);
+    if (m) return '<span class="fm-key">'+m[1]+'</span>: <span class="fm-val">'+escHtml(m[2])+'</span>';
+    return '<span class="fm-body">'+escHtml(line)+'</span>';
+  }).join('\n');
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function update() {
+  let md='', slug='';
+
+  if (mode==='event') {
+    slug          = v('ev-slug');
+    const title   = v('ev-title');
+    const date    = v('ev-date');
+    const venue   = v('ev-venue');
+    const time    = v('ev-time');
+    const type    = v('ev-type');
+    const tickets = v('ev-tickets');
+    const maps    = v('ev-maps');
+    const body    = v('ev-body');
+
+    document.getElementById('preview-path').textContent = 'content/events/'+(slug||'<slug>')+'.md';
+
+    const fm = ['---'];
+    if (title)   fm.push('title: '+title);
+    if (date)    fm.push('date: '+date);
+    if (venue)   fm.push('venue: '+venue);
+    if (time)    fm.push('time: '+time);
+    if (type)    fm.push('type: '+type);
+    if (entryType) fm.push('entry: '+entryType);
+    if (tickets && ENTRY[entryType]?.tickets) fm.push('tickets: '+tickets);
+    if (maps)    fm.push('maps_url: '+maps);
+    fm.push('---');
+    if (body)    fm.push('', body);
+    md = fm.join('\n');
+
+    // Poster path
+    document.getElementById('ev-img-path').innerHTML = slug
+      ? '/var/www/site/images/events/<strong style="color:var(--accent)">'+slug+'</strong>.jpg'
+      : '/var/www/site/images/events/<span style="color:#444">&lt;slug&gt;</span>.jpg';
+
+    const dot    = document.getElementById('poster-dot');
+    const target = document.getElementById('poster-target');
+    document.getElementById('poster-reminder').style.display = 'block';
+    if (slug) {
+      dot.className = 'dot dot-warn';
+      target.className = 'poster-path';
+      target.textContent = '/var/www/site/images/events/'+slug+'.jpg';
+    } else {
+      dot.className = 'dot dot-off';
+      target.className = 'poster-path none';
+      target.textContent = '—';
+    }
+
+  } else {
+    slug           = v('bl-slug');
+    const title    = v('bl-title');
+    const date     = v('bl-date');
+    const author   = v('bl-author');
+    const excerpt  = v('bl-excerpt');
+    const body     = v('bl-body');
+
+    document.getElementById('preview-path').textContent = 'content/blog/'+(slug||'<slug>')+'.md';
+    document.getElementById('poster-reminder').style.display = 'none';
+
+    const fm = ['---'];
+    if (title)   fm.push('title: '+title);
+    if (date)    fm.push('date: '+date);
+    if (author)  fm.push('author: '+author);
+    if (excerpt) fm.push('excerpt: '+excerpt);
+    fm.push('---');
+    if (body)    fm.push('', body);
+    md = fm.join('\n');
+  }
+
+  document.getElementById('filename-pill').textContent = slug ? slug+'.md' : '(no slug set)';
+  document.getElementById('code-block').innerHTML = hl(md);
+  window._md = md;
+  window._slug = slug;
+}
+
+function v(id) { return document.getElementById(id).value.trim(); }
+
+function copyMd() {
+  if (!window._md) return;
+  navigator.clipboard.writeText(window._md).then(() => toast('Copied!'));
+}
+
+function downloadMd() {
+  if (!window._md) return;
+  const name = (window._slug || 'content') + '.md';
+  const blob = new Blob([window._md], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded ' + name);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+function clearForm() {
+  document.querySelectorAll('input, textarea').forEach(el => {
+    if (el.type !== 'date') el.value = '';
+  });
+  if (mode==='event') setEntry('free');
+  update();
+}
+
+// Init
+const today = new Date().toISOString().split('T')[0];
+document.getElementById('ev-date').value = today;
+document.getElementById('bl-date').value = today;
+setEntry('free');
+update();
+</script>
+</body>
+</html>
